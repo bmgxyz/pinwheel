@@ -1,6 +1,5 @@
-use std::time::Duration;
-
 use macroquad::{color::colors, prelude::*};
+use uom::si::{f32::Time, time::second};
 
 use crate::state::GameState;
 
@@ -11,7 +10,7 @@ async fn main() {
     let mut state = GameState::default();
     clear_background(colors::BLACK);
     loop {
-        state.step(Duration::from_secs_f32(get_frame_time()));
+        state.step(Time::new::<second>(get_frame_time()));
         next_frame().await
     }
 }
