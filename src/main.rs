@@ -1,15 +1,17 @@
-use macroquad::prelude::*;
+use std::time::Duration;
 
-#[macroquad::main("MyGame")]
+use macroquad::{color::colors, prelude::*};
+
+use crate::state::GameState;
+
+mod state;
+
+#[macroquad::main("Pinwheel")]
 async fn main() {
+    let mut state = GameState::default();
+    clear_background(colors::BLACK);
     loop {
-        clear_background(RED);
-
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-
-        draw_text("Hello, Macroquad!", 20.0, 20.0, 30.0, DARKGRAY);
-
+        state.step(Duration::from_secs_f32(get_frame_time()));
         next_frame().await
     }
 }
