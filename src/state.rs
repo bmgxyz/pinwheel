@@ -1,11 +1,20 @@
-use macroquad::color::Color;
+use std::f32::consts::FRAC_PI_2;
+
+use macroquad::{
+    color::{Color, colors},
+    math::vec2,
+    shapes::{DrawRectangleParams, draw_rectangle, draw_rectangle_ex},
+    window::InternalGlContext,
+};
 use uom::si::{
-    angle::degree,
+    angle::{degree, radian, revolution},
     angular_velocity::degree_per_second,
     f32::{Angle, AngularVelocity, Length, Time, Velocity},
     length::meter,
     velocity::meter_per_second,
 };
+
+use crate::utils::draw_circular_sector;
 
 #[derive(Debug)]
 pub(crate) struct GameState {
@@ -19,14 +28,54 @@ impl Default for GameState {
     fn default() -> Self {
         Self {
             spinner: Spinner {
-                sectors: Vec::new(),
+                // TODO verify no overlap and entire circle covered
+                sectors: vec![
+                    Sector {
+                        color: colors::GREEN,
+                        angle_start: Angle::new::<revolution>(0.),
+                        angle_stop: Angle::new::<revolution>(0.25),
+                    },
+                    Sector {
+                        color: colors::YELLOW,
+                        angle_start: Angle::new::<revolution>(0.25),
+                        angle_stop: Angle::new::<revolution>(0.5),
+                    },
+                    Sector {
+                        color: colors::PURPLE,
+                        angle_start: Angle::new::<revolution>(0.5),
+                        angle_stop: Angle::new::<revolution>(0.75),
+                    },
+                    Sector {
+                        color: colors::RED,
+                        angle_start: Angle::new::<revolution>(0.75),
+                        angle_stop: Angle::new::<revolution>(1.),
+                    },
+                ],
                 angular_position: Angle::new::<degree>(0.),
-                angular_velocity: AngularVelocity::new::<degree_per_second>(0.),
-                pins: Vec::new(),
+                angular_velocity: AngularVelocity::new::<degree_per_second>(60.),
+                pins: vec![
+                    PinOnSpinner {
+                        color: colors::RED,
+                        angular_position: Angle::new::<revolution>(0.),
+                        length: Length::new::<meter>(1.),
+                        width: Angle::new::<degree>(5.),
+                    },
+                    PinOnSpinner {
+                        color: colors::PURPLE,
+                        angular_position: Angle::new::<revolution>(0.666),
+                        length: Length::new::<meter>(1.),
+                        width: Angle::new::<degree>(5.),
+                    },
+                ],
                 radius: Length::new::<meter>(2.),
             },
             pin_gun: PinGun { pins: Vec::new() },
-            flying_pins: Vec::new(),
+            flying_pins: vec![PinFlying {
+                color: colors::YELLOW,
+                vertical_position: Length::new::<meter>(-10.),
+                vertical_velocity: Velocity::new::<meter_per_second>(5.),
+                alive: true,
+            }],
             fire_pin: false,
         }
     }
@@ -79,6 +128,60 @@ impl GameState {
             self.spinner.take_pin(new_spinner_pin);
         }
     }
+    pub(crate) fn render(&self, gl: &mut InternalGlContext) {
+        // spinner sectors
+        for sector in self.spinner.sectors.iter() {
+            let n = ((sector.angle_stop - sector.angle_start).get::<revolution>()
+                * Sector::TRIANGLES_PER_TURN as f32) as u16;
+            draw_circular_sector(
+                0.,
+                0.,
+                n,
+                self.spinner.radius.get::<meter>(),
+                (sector.angle_start + self.spinner.angular_position).get::<radian>(),
+                (sector.angle_stop - sector.angle_start).get::<radian>(),
+                sector.color,
+                gl,
+            );
+        }
+
+        // spinner pins
+        for spinner_pin in self.spinner.pins.iter() {
+            let x = (self.spinner.radius
+                * (spinner_pin.angular_position + self.spinner.angular_position).cos())
+            .get::<meter>();
+            let y = (self.spinner.radius
+                * (spinner_pin.angular_position + self.spinner.angular_position).sin())
+            .get::<meter>();
+            draw_rectangle_ex(
+                x,
+                y,
+                0.2,
+                spinner_pin.length.get::<meter>(),
+                DrawRectangleParams {
+                    offset: vec2(0.5, 0.),
+                    rotation: (spinner_pin.angular_position + self.spinner.angular_position)
+                        .get::<radian>()
+                        - FRAC_PI_2,
+                    color: spinner_pin.color,
+                },
+            );
+        }
+
+        // pin gun
+        // TODO
+
+        // flying pins
+        for flying_pin in self.flying_pins.iter() {
+            draw_rectangle(
+                -0.1,
+                flying_pin.vertical_position.get::<meter>(),
+                0.2,
+                -1.,
+                flying_pin.color,
+            );
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -92,7 +195,7 @@ struct Spinner {
 
 impl Spinner {
     fn pin_sector_collision(&self, pin: &PinFlying, sector: &Sector) -> bool {
-        let inside_sector_radius = pin.vertical_position < self.radius;
+        let inside_sector_radius = pin.vertical_position.abs() < self.radius;
         let sector_angle_start = self.angular_position + sector.angle_start;
         let sector_angle_stop = self.angular_position + sector.angle_stop;
         let sector_is_facing_down =
@@ -100,7 +203,8 @@ impl Spinner {
         inside_sector_radius && sector_is_facing_down
     }
     fn pin_pin_collision(&self, flying_pin: &PinFlying, spinner_pin: &PinOnSpinner) -> bool {
-        let inside_pin_radius = flying_pin.vertical_position < self.radius + spinner_pin.length;
+        let inside_pin_radius =
+            flying_pin.vertical_position.abs() < self.radius + spinner_pin.length;
         let pin_angle_start =
             self.angular_position + spinner_pin.angular_position - spinner_pin.width / 2.;
         let pin_angle_stop =
@@ -111,9 +215,9 @@ impl Spinner {
     }
     fn take_pin(&mut self, pin: PinFlying) {
         self.pins.push(PinOnSpinner {
-            _color: pin.color,
-            angular_position: self.angular_position,
-            length: Length::new::<meter>(2.),
+            color: pin.color,
+            angular_position: Angle::new::<revolution>(0.75) - self.angular_position,
+            length: Length::new::<meter>(1.),
             width: Angle::new::<degree>(5.),
         })
     }
@@ -124,6 +228,10 @@ struct Sector {
     color: Color,
     angle_start: Angle,
     angle_stop: Angle,
+}
+
+impl Sector {
+    const TRIANGLES_PER_TURN: u16 = 360;
 }
 
 #[derive(Debug)]
@@ -157,7 +265,7 @@ impl From<PinInGun> for PinFlying {
 
 #[derive(Debug)]
 struct PinOnSpinner {
-    _color: Color,
+    color: Color,
     angular_position: Angle,
     length: Length,
     width: Angle,
