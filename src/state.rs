@@ -1,11 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
-use macroquad::{
-    color::{Color, colors},
-    math::vec2,
-    shapes::{DrawRectangleParams, draw_rectangle, draw_rectangle_ex},
-    window::InternalGlContext,
-};
+use macroquad::{color::colors, prelude::*};
 use uom::si::{
     angle::{degree, radian, revolution},
     angular_velocity::degree_per_second,
@@ -14,14 +9,13 @@ use uom::si::{
     velocity::meter_per_second,
 };
 
-use crate::utils::draw_circular_sector;
+use crate::utils::{draw_circular_sector, normalize_angle};
 
 #[derive(Debug)]
 pub(crate) struct GameState {
     spinner: Spinner,
     pin_gun: PinGun,
     flying_pins: Vec<PinFlying>,
-    fire_pin: bool,
 }
 
 impl Default for GameState {
@@ -69,14 +63,16 @@ impl Default for GameState {
                 ],
                 radius: Length::new::<meter>(2.),
             },
-            pin_gun: PinGun { pins: Vec::new() },
-            flying_pins: vec![PinFlying {
-                color: colors::YELLOW,
-                vertical_position: Length::new::<meter>(-10.),
-                vertical_velocity: Velocity::new::<meter_per_second>(5.),
-                alive: true,
-            }],
-            fire_pin: false,
+            pin_gun: PinGun {
+                pins: vec![
+                    PinInGun { color: colors::RED },
+                    PinInGun { color: colors::RED },
+                    PinInGun { color: colors::RED },
+                    PinInGun { color: colors::RED },
+                    PinInGun { color: colors::RED },
+                ],
+            },
+            flying_pins: Vec::new(),
         }
     }
 }
@@ -84,16 +80,15 @@ impl Default for GameState {
 impl GameState {
     pub(crate) fn step(&mut self, dt: Time) {
         // fire a pin if the player asked to
-        if self.fire_pin {
+        if is_key_pressed(KeyCode::Space) {
             if let Some(next_pin) = self.pin_gun.pins.pop() {
                 self.flying_pins.push(next_pin.into());
             }
-            self.fire_pin = false;
         }
 
         // spin the spinner
         let d_theta: Angle = (self.spinner.angular_velocity * dt).into();
-        self.spinner.angular_position += d_theta;
+        self.spinner.angular_position = normalize_angle(&(self.spinner.angular_position + d_theta));
 
         // advance flying pins
         for flying_pin in self.flying_pins.iter_mut().filter(|p| p.alive) {
@@ -169,7 +164,11 @@ impl GameState {
         }
 
         // pin gun
-        // TODO
+        draw_rectangle(-0.5, -10., 1., 5., colors::GRAY);
+        for (pin_idx, pin_in_gun) in self.pin_gun.pins.iter().rev().take(5).enumerate() {
+            let y = -5.5 - (pin_idx as f32 * 1.);
+            draw_circle(0., y, 0.25, pin_in_gun.color);
+        }
 
         // flying pins
         for flying_pin in self.flying_pins.iter() {
@@ -196,10 +195,11 @@ struct Spinner {
 impl Spinner {
     fn pin_sector_collision(&self, pin: &PinFlying, sector: &Sector) -> bool {
         let inside_sector_radius = pin.vertical_position.abs() < self.radius;
-        let sector_angle_start = self.angular_position + sector.angle_start;
-        let sector_angle_stop = self.angular_position + sector.angle_stop;
-        let sector_is_facing_down =
-            (sector_angle_start.get::<degree>()..sector_angle_stop.get::<degree>()).contains(&270.);
+        let sector_angle_start = normalize_angle(&(self.angular_position + sector.angle_start));
+        let sector_angle_stop = normalize_angle(&(self.angular_position + sector.angle_stop));
+        let sector_is_facing_down = (sector_angle_start.get::<revolution>()
+            ..sector_angle_stop.get::<revolution>())
+            .contains(&0.75);
         inside_sector_radius && sector_is_facing_down
     }
     fn pin_pin_collision(&self, flying_pin: &PinFlying, spinner_pin: &PinOnSpinner) -> bool {
@@ -256,8 +256,8 @@ impl From<PinInGun> for PinFlying {
     fn from(value: PinInGun) -> Self {
         PinFlying {
             color: value.color,
-            vertical_position: Length::new::<meter>(10.),
-            vertical_velocity: Velocity::new::<meter_per_second>(-50.),
+            vertical_position: Length::new::<meter>(-5.),
+            vertical_velocity: Velocity::new::<meter_per_second>(10.),
             alive: true,
         }
     }

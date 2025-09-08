@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use uom::si::{angle::revolution, f32::Angle};
 
 pub(crate) fn draw_circular_sector(
     x: f32,
@@ -44,4 +45,15 @@ pub(crate) fn draw_circular_sector(
     gl.quad_gl.draw_mode(DrawMode::Triangles);
     gl.quad_gl.geometry(&vertices, &indices);
     gl.flush();
+}
+
+pub(crate) fn normalize_angle(angle: &Angle) -> Angle {
+    let mut new_angle = *angle;
+    while new_angle < Angle::new::<revolution>(0.) {
+        new_angle += Angle::new::<revolution>(1.);
+    }
+    while new_angle > Angle::new::<revolution>(1.) {
+        new_angle -= Angle::new::<revolution>(1.);
+    }
+    new_angle
 }

@@ -10,8 +10,8 @@ mod utils;
 async fn main() {
     let mut state = GameState::default();
     let mut gl = unsafe { get_internal_gl() };
-    request_new_screen_size(480., 960.);
-    let camera = Camera2D::from_display_rect(Rect::new(-5.0, -15.0, 10.0, 20.0));
+    request_new_screen_size(480., 720.);
+    let camera = Camera2D::from_display_rect(Rect::new(-5., -10., 10., 15.));
     set_camera(&camera);
     loop {
         clear_background(Color::from_hex(0x3CA7D5));
