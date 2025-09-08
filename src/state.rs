@@ -11,11 +11,19 @@ use uom::si::{
 
 use crate::utils::{draw_circular_sector, normalize_angle};
 
+#[derive(Debug, PartialEq)]
+enum LevelState {
+    Playing,
+    Won,
+    Lost,
+}
+
 #[derive(Debug)]
 pub(crate) struct GameState {
     spinner: Spinner,
     pin_gun: PinGun,
     flying_pins: Vec<PinFlying>,
+    level_state: LevelState,
 }
 
 impl Default for GameState {
@@ -49,14 +57,26 @@ impl Default for GameState {
                 angular_velocity: AngularVelocity::new::<degree_per_second>(60.),
                 pins: vec![
                     PinOnSpinner {
-                        color: colors::RED,
+                        color: colors::BLACK,
                         angular_position: Angle::new::<revolution>(0.),
                         length: Length::new::<meter>(1.),
                         width: Angle::new::<degree>(5.),
                     },
                     PinOnSpinner {
-                        color: colors::PURPLE,
-                        angular_position: Angle::new::<revolution>(0.666),
+                        color: colors::BLACK,
+                        angular_position: Angle::new::<revolution>(0.25),
+                        length: Length::new::<meter>(1.),
+                        width: Angle::new::<degree>(5.),
+                    },
+                    PinOnSpinner {
+                        color: colors::BLACK,
+                        angular_position: Angle::new::<revolution>(0.5),
+                        length: Length::new::<meter>(1.),
+                        width: Angle::new::<degree>(5.),
+                    },
+                    PinOnSpinner {
+                        color: colors::BLACK,
+                        angular_position: Angle::new::<revolution>(0.75),
                         length: Length::new::<meter>(1.),
                         width: Angle::new::<degree>(5.),
                     },
@@ -67,23 +87,46 @@ impl Default for GameState {
                 pins: vec![
                     PinInGun { color: colors::RED },
                     PinInGun { color: colors::RED },
-                    PinInGun { color: colors::RED },
-                    PinInGun { color: colors::RED },
-                    PinInGun { color: colors::RED },
+                    PinInGun {
+                        color: colors::YELLOW,
+                    },
+                    PinInGun {
+                        color: colors::PURPLE,
+                    },
+                    PinInGun {
+                        color: colors::PURPLE,
+                    },
                 ],
             },
             flying_pins: Vec::new(),
+            level_state: LevelState::Playing,
         }
     }
 }
 
 impl GameState {
     pub(crate) fn step(&mut self, dt: Time) {
+        // check win condition
+        if self.pin_gun.pins.is_empty() && self.flying_pins.is_empty() {
+            self.level_state = LevelState::Won;
+        }
+
         // fire a pin if the player asked to
-        if is_key_pressed(KeyCode::Space) {
-            if let Some(next_pin) = self.pin_gun.pins.pop() {
-                self.flying_pins.push(next_pin.into());
+        if is_key_pressed(KeyCode::Space) || is_mouse_button_pressed(MouseButton::Left) {
+            match self.level_state {
+                LevelState::Playing => {
+                    if let Some(next_pin) = self.pin_gun.pins.pop() {
+                        self.flying_pins.push(next_pin.into());
+                    }
+                }
+                LevelState::Won | LevelState::Lost => *self = Self::default(),
             }
+        }
+
+        // early return if the game has ended
+        match self.level_state {
+            LevelState::Won | LevelState::Lost => return,
+            _ => (),
         }
 
         // spin the spinner
@@ -91,7 +134,7 @@ impl GameState {
         self.spinner.angular_position = normalize_angle(&(self.spinner.angular_position + d_theta));
 
         // advance flying pins
-        for flying_pin in self.flying_pins.iter_mut().filter(|p| p.alive) {
+        for flying_pin in self.flying_pins.iter_mut() {
             flying_pin.vertical_position += flying_pin.vertical_velocity * dt;
         }
 
@@ -104,7 +147,7 @@ impl GameState {
                     if flying_pin.color == sector.color {
                         new_spinner_pin_idxs.push(idx);
                     } else {
-                        flying_pin.alive = false;
+                        self.level_state = LevelState::Lost;
                     }
                 }
             }
@@ -112,7 +155,7 @@ impl GameState {
             // pin collisions
             for spinner_pin in self.spinner.pins.iter() {
                 if self.spinner.pin_pin_collision(flying_pin, spinner_pin) {
-                    flying_pin.alive = false;
+                    self.level_state = LevelState::Lost;
                 }
             }
         }
@@ -249,7 +292,6 @@ struct PinFlying {
     color: Color,
     vertical_position: Length,
     vertical_velocity: Velocity,
-    alive: bool,
 }
 
 impl From<PinInGun> for PinFlying {
@@ -257,8 +299,7 @@ impl From<PinInGun> for PinFlying {
         PinFlying {
             color: value.color,
             vertical_position: Length::new::<meter>(-5.),
-            vertical_velocity: Velocity::new::<meter_per_second>(10.),
-            alive: true,
+            vertical_velocity: Velocity::new::<meter_per_second>(15.),
         }
     }
 }
