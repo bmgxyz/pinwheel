@@ -9,7 +9,7 @@ mod utils;
 
 #[macroquad::main("Pinwheel")]
 async fn main() {
-    let levels_str = include_str!("levels.json");
+    let levels_str = include_str!("../levels.json");
     let levels = serde_json::from_str::<Vec<Level>>(&levels_str).unwrap();
     let mut state = GameState::default();
     state.load_levels(&levels);
