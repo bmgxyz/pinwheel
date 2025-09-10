@@ -1,6 +1,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use macroquad::{color::colors, prelude::*};
+use serde::Deserialize;
 use uom::si::{
     angle::{degree, radian, revolution},
     angular_velocity::degree_per_second,
@@ -9,117 +10,71 @@ use uom::si::{
     velocity::meter_per_second,
 };
 
+use crate::level::{Level, SerdeColor};
 use crate::utils::{draw_circular_sector, normalize_angle};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 enum LevelState {
+    #[default]
     Playing,
     Won,
     Lost,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct GameState {
     spinner: Spinner,
     pin_gun: PinGun,
     flying_pins: Vec<PinFlying>,
+    levels: Vec<Level>,
+    level_idx: usize,
     level_state: LevelState,
 }
 
-impl Default for GameState {
-    fn default() -> Self {
-        Self {
-            spinner: Spinner {
-                // TODO verify no overlap and entire circle covered
-                sectors: vec![
-                    Sector {
-                        color: colors::GREEN,
-                        angle_start: Angle::new::<revolution>(0.),
-                        angle_stop: Angle::new::<revolution>(0.25),
-                    },
-                    Sector {
-                        color: colors::YELLOW,
-                        angle_start: Angle::new::<revolution>(0.25),
-                        angle_stop: Angle::new::<revolution>(0.5),
-                    },
-                    Sector {
-                        color: colors::PURPLE,
-                        angle_start: Angle::new::<revolution>(0.5),
-                        angle_stop: Angle::new::<revolution>(0.75),
-                    },
-                    Sector {
-                        color: colors::RED,
-                        angle_start: Angle::new::<revolution>(0.75),
-                        angle_stop: Angle::new::<revolution>(1.),
-                    },
-                ],
-                angular_position: Angle::new::<degree>(0.),
-                angular_velocity: AngularVelocity::new::<degree_per_second>(60.),
-                pins: vec![
-                    PinOnSpinner {
-                        color: colors::BLACK,
-                        angular_position: Angle::new::<revolution>(0.),
-                        length: Length::new::<meter>(1.),
-                        width: Angle::new::<degree>(5.),
-                    },
-                    PinOnSpinner {
-                        color: colors::BLACK,
-                        angular_position: Angle::new::<revolution>(0.25),
-                        length: Length::new::<meter>(1.),
-                        width: Angle::new::<degree>(5.),
-                    },
-                    PinOnSpinner {
-                        color: colors::BLACK,
-                        angular_position: Angle::new::<revolution>(0.5),
-                        length: Length::new::<meter>(1.),
-                        width: Angle::new::<degree>(5.),
-                    },
-                    PinOnSpinner {
-                        color: colors::BLACK,
-                        angular_position: Angle::new::<revolution>(0.75),
-                        length: Length::new::<meter>(1.),
-                        width: Angle::new::<degree>(5.),
-                    },
-                ],
-                radius: Length::new::<meter>(2.),
-            },
-            pin_gun: PinGun {
-                pins: vec![
-                    PinInGun { color: colors::RED },
-                    PinInGun { color: colors::RED },
-                    PinInGun {
-                        color: colors::YELLOW,
-                    },
-                    PinInGun {
-                        color: colors::PURPLE,
-                    },
-                    PinInGun {
-                        color: colors::PURPLE,
-                    },
-                ],
-            },
-            flying_pins: Vec::new(),
-            level_state: LevelState::Playing,
+impl GameState {
+    pub(crate) fn load_levels(&mut self, levels: &[Level]) {
+        self.levels = levels.to_vec();
+        self.level_idx = 0;
+        if levels.is_empty() {
+            *self = GameState::default();
+        } else {
+            let level = self.levels[self.level_idx].clone();
+            self.load_level(&level);
         }
     }
-}
-
-impl GameState {
+    fn load_level(&mut self, level: &Level) {
+        self.spinner = level.spinner.clone();
+        self.pin_gun.pins = level.pins_in_gun.clone();
+        self.flying_pins.clear();
+        self.level_state = LevelState::Playing;
+    }
     pub(crate) fn step(&mut self, dt: Time) {
+        clear_background(Color::from_hex(0x3CA7D5));
+
         // check win condition
         if self.pin_gun.pins.is_empty() && self.flying_pins.is_empty() {
             self.level_state = LevelState::Won;
         }
 
-        // fire a pin if the player asked to
         if is_key_pressed(KeyCode::Space) || is_mouse_button_pressed(MouseButton::Left) {
             match self.level_state {
                 LevelState::Playing => {
+                    // fire a pin if the player asked to
                     if let Some(next_pin) = self.pin_gun.pins.pop() {
                         self.flying_pins.push(next_pin.into());
                     }
                 }
-                LevelState::Won | LevelState::Lost => *self = Self::default(),
+                LevelState::Won => {
+                    if self.level_idx < self.levels.len() - 1 {
+                        self.level_idx += 1;
+                        let level = self.levels[self.level_idx].clone();
+                        self.load_level(&level);
+                    }
+                }
+                LevelState::Lost => {
+                    let level = self.levels[self.level_idx].clone();
+                    self.load_level(&level);
+                }
             }
         }
 
@@ -226,13 +181,29 @@ impl GameState {
     }
 }
 
-#[derive(Debug)]
-struct Spinner {
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct Spinner {
     sectors: Vec<Sector>,
     angular_position: Angle,
     angular_velocity: AngularVelocity,
     pins: Vec<PinOnSpinner>,
     radius: Length,
+}
+
+impl Default for Spinner {
+    fn default() -> Self {
+        Spinner {
+            sectors: vec![Sector {
+                color: colors::BLACK,
+                angle_start: Angle::new::<revolution>(0.),
+                angle_stop: Angle::new::<revolution>(1.),
+            }],
+            angular_position: Angle::new::<revolution>(0.),
+            angular_velocity: AngularVelocity::new::<degree_per_second>(60.),
+            pins: Vec::new(),
+            radius: Length::new::<meter>(2.),
+        }
+    }
 }
 
 impl Spinner {
@@ -252,8 +223,9 @@ impl Spinner {
             self.angular_position + spinner_pin.angular_position - spinner_pin.width / 2.;
         let pin_angle_stop =
             self.angular_position + spinner_pin.angular_position + spinner_pin.width / 2.;
-        let spinner_pin_facing_down =
-            (pin_angle_start.get::<degree>()..pin_angle_stop.get::<degree>()).contains(&270.);
+        let spinner_pin_facing_down = (pin_angle_start.get::<revolution>()
+            ..pin_angle_stop.get::<revolution>())
+            .contains(&0.75);
         inside_pin_radius && spinner_pin_facing_down
     }
     fn take_pin(&mut self, pin: PinFlying) {
@@ -266,24 +238,26 @@ impl Spinner {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 struct Sector {
+    #[serde(with = "SerdeColor")]
     color: Color,
     angle_start: Angle,
     angle_stop: Angle,
 }
 
 impl Sector {
-    const TRIANGLES_PER_TURN: u16 = 360;
+    const TRIANGLES_PER_TURN: u16 = 90;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct PinGun {
     pins: Vec<PinInGun>,
 }
 
-#[derive(Debug)]
-struct PinInGun {
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub(crate) struct PinInGun {
+    #[serde(with = "SerdeColor")]
     color: Color,
 }
 
@@ -304,8 +278,9 @@ impl From<PinInGun> for PinFlying {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 struct PinOnSpinner {
+    #[serde(with = "SerdeColor")]
     color: Color,
     angular_position: Angle,
     length: Length,

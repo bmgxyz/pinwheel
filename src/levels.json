@@ -1,0 +1,139 @@
+[
+    {
+        "spinner": {
+            "sectors": [
+                {
+                    "color": {
+                        "r": 0,
+                        "g": 0.89,
+                        "b": 0.19,
+                        "a": 1
+                    },
+                    "angle_start": 0,
+                    "angle_stop": 1.571
+                },
+                {
+                    "color": {
+                        "r": 0.99,
+                        "g": 0.98,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "angle_start": 1.571,
+                    "angle_stop": 3.142
+                },
+                {
+                    "color": {
+                        "r": 0.78,
+                        "g": 0.48,
+                        "b": 1,
+                        "a": 1
+                    },
+                    "angle_start": 3.142,
+                    "angle_stop": 4.712
+                },
+                {
+                    "color": {
+                        "r": 0.90,
+                        "g": 0.16,
+                        "b": 0.22,
+                        "a": 1
+                    },
+                    "angle_start": 4.712,
+                    "angle_stop": 6.283
+                }
+            ],
+            "angular_position": 0,
+            "angular_velocity": 1,
+            "pins": [
+                {
+                    "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "angular_position": 0,
+                    "length": 1,
+                    "width": 0.0873
+                },
+                {
+                    "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "angular_position": 1.571,
+                    "length": 1,
+                    "width": 0.0873
+                },
+                {
+                    "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "angular_position": 3.142,
+                    "length": 1,
+                    "width": 0.0873
+                },
+                {
+                    "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1
+                    },
+                    "angular_position": 4.712,
+                    "length": 1,
+                    "width": 0.0873
+                }
+            ],
+            "radius": 2
+        },
+        "pins_in_gun": [
+            {
+                "color": {
+                    "r": 0.90,
+                    "g": 0.16,
+                    "b": 0.22,
+                    "a": 1
+                }
+            },
+            {
+                "color": {
+                    "r": 0.90,
+                    "g": 0.16,
+                    "b": 0.22,
+                    "a": 1
+                }
+            },
+            {
+                "color": {
+                    "r": 0.99,
+                    "g": 0.98,
+                    "b": 0,
+                    "a": 1
+                }
+            },
+            {
+                "color": {
+                    "r": 0.78,
+                    "g": 0.48,
+                    "b": 1,
+                    "a": 1
+                }
+            },
+            {
+                "color": {
+                    "r": 0.78,
+                    "g": 0.48,
+                    "b": 1,
+                    "a": 1
+                }
+            }
+        ]
+    }
+]
