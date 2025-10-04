@@ -14,6 +14,8 @@ impl<'a> GameState<'a> {
         // TODO check that there is at least one level
         let mut game = GameState {
             gl: GlWrapper(gl),
+            startup_complete: false,
+            text_params: TextParams::default(),
             spinner: Spinner::default(),
             pin_gun: PinGun::default(),
             flying_pins: vec![],
@@ -32,10 +34,6 @@ impl<'a> GameState<'a> {
         self.level_state = LevelState::Playing;
     }
     pub async fn run(&mut self) -> ! {
-        // state.load_levels(&levels);
-        request_new_screen_size(480., 720.);
-        let camera = Camera2D::from_display_rect(Rect::new(-5., -10., 10., 15.));
-        set_camera(&camera);
         loop {
             self.step(Time::new::<second>(get_frame_time()));
             self.render();

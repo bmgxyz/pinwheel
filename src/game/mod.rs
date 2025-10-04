@@ -16,6 +16,8 @@ mod utils;
 #[derive(Debug)]
 pub struct GameState<'a> {
     gl: GlWrapper<'a>,
+    startup_complete: bool,
+    text_params: TextParams<'a>,
     spinner: Spinner,
     pin_gun: PinGun,
     flying_pins: Vec<PinFlying>,

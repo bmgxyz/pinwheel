@@ -5,8 +5,6 @@ use crate::game::{GameState, LevelState, utils::normalize_angle};
 
 impl<'a> GameState<'a> {
     pub(crate) fn step(&mut self, dt: Time) {
-        clear_background(Color::from_hex(0x3CA7D5));
-
         // check win condition
         if self.pin_gun.pins.is_empty() && self.flying_pins.is_empty() {
             self.level_state = LevelState::Won;

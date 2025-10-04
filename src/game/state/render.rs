@@ -1,15 +1,72 @@
 use std::f32::consts::FRAC_PI_2;
 
-use macroquad::{color::colors, prelude::*};
+use macroquad::{color::colors, miniquad::window::screen_size, prelude::*};
 use uom::si::{
     angle::{radian, revolution},
+    f32::Angle,
     length::meter,
 };
 
 use crate::game::{GameState, Sector, utils::draw_circular_sector};
 
 impl<'a> GameState<'a> {
+    const TARGET_HEIGHT: f32 = 720.;
+    const TARGET_WIDTH: f32 = 480.;
+    const TARGET_ASPECT_RATIO: f32 = Self::TARGET_HEIGHT / Self::TARGET_WIDTH;
+    const TARGET_BOUNDING_BOX_METERS: Rect = Rect::new(-5., -10., 10., 15.);
+
+    const SKY_BLUE: Color = Color::from_hex(0x3CA7D5);
+
     pub fn render(&mut self) {
+        if !self.startup_complete {
+            request_new_screen_size(Self::TARGET_WIDTH, Self::TARGET_HEIGHT);
+            self.startup_complete = true;
+            return;
+        }
+
+        // maintain camera aspect ratio regardless of screen dimensions
+        let (width, height) = screen_size();
+        let actual_aspect_ratio = height / width;
+        let world_bounding_box_meters = if actual_aspect_ratio > Self::TARGET_ASPECT_RATIO {
+            let new_height = Self::TARGET_BOUNDING_BOX_METERS.w * actual_aspect_ratio;
+            let new_y = Self::TARGET_BOUNDING_BOX_METERS.y
+                - (new_height - Self::TARGET_BOUNDING_BOX_METERS.h) / 2.;
+            Rect::new(
+                Self::TARGET_BOUNDING_BOX_METERS.x,
+                new_y,
+                Self::TARGET_BOUNDING_BOX_METERS.w,
+                new_height,
+            )
+        } else if actual_aspect_ratio < Self::TARGET_ASPECT_RATIO {
+            let new_width = Self::TARGET_BOUNDING_BOX_METERS.h / actual_aspect_ratio;
+            let new_x = Self::TARGET_BOUNDING_BOX_METERS.x
+                - (new_width - Self::TARGET_BOUNDING_BOX_METERS.w) / 2.;
+            Rect::new(
+                new_x,
+                Self::TARGET_BOUNDING_BOX_METERS.y,
+                new_width,
+                Self::TARGET_BOUNDING_BOX_METERS.h,
+            )
+        } else {
+            Self::TARGET_BOUNDING_BOX_METERS
+        };
+        let camera = Camera2D::from_display_rect(world_bounding_box_meters);
+        set_camera(&camera);
+
+        // set text parameters based on updated camera
+        let (font_size, font_scale, font_aspect) = camera_font_scale(1.);
+        self.text_params = TextParams {
+            font_size,
+            font_scale,
+            // text appears upside down and backwards unless I include these tweaks, not sure why
+            font_scale_aspect: -font_aspect,
+            rotation: Angle::new::<revolution>(0.5).get::<radian>(),
+            ..Default::default()
+        };
+
+        // clear screen so we can draw the next frame
+        clear_background(Self::SKY_BLUE);
+
         // spinner sectors
         for sector in self.spinner.sectors.iter() {
             let n = ((sector.angle_stop - sector.angle_start).get::<revolution>()
