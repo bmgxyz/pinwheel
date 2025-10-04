@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 use uom::si::{angle::revolution, f32::Angle};
 
+// TODO reduce param count or allow clippy::too_many_arguments
 pub(crate) fn draw_circular_sector(
     x: f32,
     y: f32,
