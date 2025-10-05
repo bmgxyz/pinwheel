@@ -18,6 +18,7 @@ pub struct GameState<'a> {
     gl: GlWrapper<'a>,
     startup_complete: bool,
     text_params: TextParams<'a>,
+    win_message: &'a str,
     spinner: Spinner,
     pin_gun: PinGun,
     flying_pins: Vec<PinFlying>,

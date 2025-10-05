@@ -7,7 +7,10 @@ use uom::si::{
     length::meter,
 };
 
-use crate::game::{GameState, Sector, utils::draw_circular_sector};
+use crate::game::{
+    GameState, LevelState, Sector,
+    utils::{draw_circular_sector, draw_text_ex_center, use_white_text},
+};
 
 impl<'a> GameState<'a> {
     const TARGET_HEIGHT: f32 = 720.;
@@ -61,11 +64,32 @@ impl<'a> GameState<'a> {
             // text appears upside down and backwards unless I include these tweaks, not sure why
             font_scale_aspect: -font_aspect,
             rotation: Angle::new::<revolution>(0.5).get::<radian>(),
-            ..Default::default()
+            ..self.text_params
         };
 
         // clear screen so we can draw the next frame
         clear_background(Self::SKY_BLUE);
+
+        if self.level_state == LevelState::Won && self.level_idx == self.levels.len() - 1 {
+            // win message
+            draw_text_ex_center(
+                self.win_message,
+                0.,
+                4.,
+                TextParams {
+                    font_size: 24,
+                    ..self.text_params
+                },
+            );
+        } else {
+            // level counter
+            draw_text_ex_center(
+                &format!("{} / {}", self.level_idx + 1, self.levels.len()),
+                0.,
+                4.,
+                self.text_params.clone(),
+            );
+        }
 
         // spinner sectors
         for sector in self.spinner.sectors.iter() {
@@ -111,6 +135,20 @@ impl<'a> GameState<'a> {
         for (pin_idx, pin_in_gun) in self.pin_gun.pins.iter().rev().take(5).enumerate() {
             let y = -5.5 - (pin_idx as f32 * 1.);
             draw_circle(0., y, 0.25, pin_in_gun.color);
+            draw_text_ex_center(
+                &format!("{}", self.pin_gun.pins.len() - pin_idx),
+                0.,
+                y,
+                TextParams {
+                    font_size: 14,
+                    color: if use_white_text(pin_in_gun.color) {
+                        colors::WHITE
+                    } else {
+                        colors::BLACK
+                    },
+                    ..self.text_params
+                },
+            );
         }
 
         // flying pins

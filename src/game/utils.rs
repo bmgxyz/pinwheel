@@ -58,3 +58,27 @@ pub(crate) fn normalize_angle(angle: &Angle) -> Angle {
     }
     new_angle
 }
+
+pub(crate) fn draw_text_ex_center(
+    text: &str,
+    x: f32,
+    y: f32,
+    params: TextParams,
+) -> TextDimensions {
+    let TextParams {
+        font,
+        font_size,
+        font_scale,
+        ..
+    } = params;
+    let dimensions = measure_text(text, font, font_size, font_scale);
+    let new_x = x - dimensions.width / 2.;
+    let new_y = y - dimensions.height / 2.;
+    draw_text_ex(text, new_x, new_y, params)
+}
+
+pub(crate) fn use_white_text(background: Color) -> bool {
+    let Color { r, g, b, .. } = background;
+    // https://stackoverflow.com/a/3943023
+    r * 0.299 + g * 0.587 + b * 0.114 > 165.
+}
