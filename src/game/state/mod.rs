@@ -14,7 +14,7 @@ mod render;
 mod step;
 
 static FONT: LazyLock<Font> = LazyLock::new(|| {
-    let font_bytes = include_bytes!("../../../AlanSans-Medium.ttf");
+    let font_bytes = include_bytes!("../../../assets/AlanSans-Medium.ttf");
     load_ttf_font_from_bytes(font_bytes).unwrap()
 });
 
@@ -30,7 +30,7 @@ impl<'a> GameState<'a> {
         "you are victorious",
     ];
     pub fn new(gl: InternalGlContext) -> GameState {
-        let levels_str = include_str!("../../../levels.json");
+        let levels_str = include_str!("../../../assets/levels.json");
         // TODO handle error instead of unwrapping
         let levels = serde_json::from_str::<Vec<Level>>(levels_str).unwrap();
         // TODO check that there is at least one level
