@@ -4,6 +4,7 @@
 
 let
   libInputs = with pkgs; [
+    alsa-lib
     libGL
     libxkbcommon
     xorg.libX11
@@ -13,6 +14,7 @@ let
   shell = pkgs.mkShellNoCC {
     shellHook = ''
       export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${libPath}"
+      export RUSTFLAGS="$RUSTFLAGS -L${pkgs.alsa-lib.outPath}/lib"
     '';
   };
 in

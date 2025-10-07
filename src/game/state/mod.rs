@@ -1,14 +1,15 @@
 use std::sync::LazyLock;
 
 use macroquad::{
+    audio::play_sound_once,
     color::colors,
     miniquad::date::now,
-    prelude::{rand::rand, *},
-    rand::srand,
+    prelude::*,
+    rand::{ChooseRandom, srand},
 };
 use uom::si::{f32::Time, time::second};
 
-use crate::game::{GameState, GlWrapper, Level, LevelState, PinGun, Spinner};
+use crate::game::{GameState, GlWrapper, Level, LevelState, PinGun, SoundData, Sounds, Spinner};
 
 mod render;
 mod step;
@@ -29,7 +30,7 @@ impl<'a> GameState<'a> {
         "you have mastered this game",
         "you are victorious",
     ];
-    pub fn new(gl: InternalGlContext) -> GameState {
+    pub async fn new(gl: InternalGlContext<'_>) -> GameState<'_> {
         let levels_str = include_str!("../../../assets/levels.json");
         // TODO handle error instead of unwrapping
         let levels = serde_json::from_str::<Vec<Level>>(levels_str).unwrap();
@@ -43,23 +44,34 @@ impl<'a> GameState<'a> {
                 color: colors::WHITE,
                 ..Default::default()
             },
-            win_message: Self::WIN_MESSAGES[rand() as usize % Self::WIN_MESSAGES.len()],
+            win_message: Self::WIN_MESSAGES.choose().unwrap(),
             spinner: Spinner::default(),
             pin_gun: PinGun::default(),
             flying_pins: vec![],
             levels,
             level_idx: 0,
             level_state: LevelState::default(),
+            sound_data: SoundData::load().await,
         };
         game.load_level(game.level_idx);
         game
     }
-    pub(crate) fn load_level(&mut self, level_idx: usize) {
+    fn load_level(&mut self, level_idx: usize) {
         let level = &self.levels[level_idx];
         self.spinner = level.spinner.clone();
         self.pin_gun.pins = level.pins_in_gun.clone();
         self.flying_pins.clear();
         self.level_state = LevelState::Playing;
+    }
+    fn play_sound(&self, sound: Sounds) {
+        match sound {
+            Sounds::PinFire => play_sound_once(&self.sound_data.pin_fire),
+            Sounds::PinLand => play_sound_once(&self.sound_data.pin_land),
+            Sounds::LoseLevel => play_sound_once(&self.sound_data.lose_level),
+            Sounds::NextLevel => play_sound_once(&self.sound_data.next_level),
+            Sounds::WinLevel => play_sound_once(&self.sound_data.win_level),
+            Sounds::WinGame => play_sound_once(&self.sound_data.win_game),
+        };
     }
     pub async fn run(&mut self) -> ! {
         loop {

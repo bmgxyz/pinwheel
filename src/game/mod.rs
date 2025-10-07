@@ -3,7 +3,10 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use macroquad::prelude::*;
+use macroquad::{
+    audio::{Sound, load_sound_from_bytes},
+    prelude::*,
+};
 use serde::Deserialize;
 use uom::si::f32::{Angle, AngularVelocity, Length, Velocity};
 
@@ -25,6 +28,57 @@ pub struct GameState<'a> {
     levels: Vec<Level>,
     level_idx: usize,
     level_state: LevelState,
+    sound_data: SoundData,
+}
+
+#[derive(Debug)]
+struct SoundData {
+    pin_fire: Sound,
+    pin_land: Sound,
+    lose_level: Sound,
+    next_level: Sound,
+    win_level: Sound,
+    win_game: Sound,
+}
+
+impl SoundData {
+    async fn load() -> SoundData {
+        let pin_fire = load_sound_from_bytes(include_bytes!("../../assets/pin-fire.ogg"))
+            .await
+            .unwrap();
+        let pin_land = load_sound_from_bytes(include_bytes!("../../assets/pin-land.ogg"))
+            .await
+            .unwrap();
+        let lose_level = load_sound_from_bytes(include_bytes!("../../assets/lose-level.ogg"))
+            .await
+            .unwrap();
+        let next_level = load_sound_from_bytes(include_bytes!("../../assets/next-level.ogg"))
+            .await
+            .unwrap();
+        let win_level = load_sound_from_bytes(include_bytes!("../../assets/win-level.ogg"))
+            .await
+            .unwrap();
+        let win_game = load_sound_from_bytes(include_bytes!("../../assets/win-game.ogg"))
+            .await
+            .unwrap();
+        SoundData {
+            pin_fire,
+            pin_land,
+            lose_level,
+            next_level,
+            win_level,
+            win_game,
+        }
+    }
+}
+
+enum Sounds {
+    PinFire,
+    PinLand,
+    LoseLevel,
+    NextLevel,
+    WinLevel,
+    WinGame,
 }
 
 struct GlWrapper<'a>(InternalGlContext<'a>);
