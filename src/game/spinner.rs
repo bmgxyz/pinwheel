@@ -48,7 +48,7 @@ impl Spinner {
             color: pin.color,
             angular_position: Angle::new::<revolution>(0.75) - self.angular_position,
             length: Length::new::<meter>(1.),
-            width: Angle::new::<degree>(5.),
+            width: Angle::new::<degree>(8.),
         })
     }
 }

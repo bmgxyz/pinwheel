@@ -51,7 +51,7 @@ impl<'a> GameState<'a> {
             level_idx: 0,
             level_state: LevelState::default(),
         };
-        game.load_level(0);
+        game.load_level(game.level_idx);
         game
     }
     pub(crate) fn load_level(&mut self, level_idx: usize) {

@@ -87,7 +87,10 @@ impl<'a> GameState<'a> {
                 &format!("{} / {}", self.level_idx + 1, self.levels.len()),
                 0.,
                 4.,
-                self.text_params.clone(),
+                TextParams {
+                    font_size: 36,
+                    ..self.text_params
+                },
             );
         }
 
