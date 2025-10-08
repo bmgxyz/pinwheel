@@ -9,7 +9,7 @@ use uom::si::{
 
 use crate::game::{
     GameState, LevelState, Sector,
-    utils::{draw_circular_sector, draw_text_ex_center, use_white_text},
+    utils::{CircularSectorParams, draw_circular_sector, draw_text_ex_center, use_white_text},
 };
 
 impl<'a> GameState<'a> {
@@ -98,16 +98,14 @@ impl<'a> GameState<'a> {
         for sector in self.spinner.sectors.iter() {
             let n = ((sector.angle_stop - sector.angle_start).get::<revolution>()
                 * Sector::TRIANGLES_PER_TURN as f32) as u16;
-            draw_circular_sector(
-                0.,
-                0.,
+            let params = CircularSectorParams {
                 n,
-                self.spinner.radius.get::<meter>(),
-                (sector.angle_start + self.spinner.angular_position).get::<radian>(),
-                (sector.angle_stop - sector.angle_start).get::<radian>(),
-                sector.color,
-                &mut self.gl,
-            );
+                radius: self.spinner.radius.get::<meter>(),
+                rotation: (sector.angle_start + self.spinner.angular_position).get::<radian>(),
+                arc: (sector.angle_stop - sector.angle_start).get::<radian>(),
+                color: sector.color,
+            };
+            draw_circular_sector(0., 0., params, &mut self.gl);
         }
 
         // spinner pins

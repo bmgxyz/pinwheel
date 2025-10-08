@@ -1,17 +1,27 @@
 use macroquad::prelude::*;
 use uom::si::{angle::revolution, f32::Angle};
 
-// TODO reduce param count or allow clippy::too_many_arguments
+pub(crate) struct CircularSectorParams {
+    pub(crate) n: u16,
+    pub(crate) radius: f32,
+    pub(crate) rotation: f32,
+    pub(crate) arc: f32,
+    pub(crate) color: Color,
+}
+
 pub(crate) fn draw_circular_sector(
     x: f32,
     y: f32,
-    n: u16,
-    radius: f32,
-    rotation: f32,
-    arc: f32,
-    color: Color,
+    params: CircularSectorParams,
     gl: &mut InternalGlContext,
 ) {
+    let CircularSectorParams {
+        n,
+        radius,
+        rotation,
+        arc,
+        color,
+    } = params;
     if arc <= 0. || radius <= 0. || n == 0 {
         return;
     }

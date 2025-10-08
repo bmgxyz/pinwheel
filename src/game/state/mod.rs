@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{error::Error, sync::LazyLock};
 
 use macroquad::{
     audio::play_sound_once,
@@ -30,11 +30,15 @@ impl<'a> GameState<'a> {
         "you have mastered this game",
         "you are victorious",
     ];
-    pub async fn new(gl: InternalGlContext<'_>) -> GameState<'_> {
+    pub async fn new(gl: InternalGlContext<'_>) -> Result<GameState<'_>, Box<dyn Error>> {
         let levels_str = include_str!("../../../assets/levels.json");
-        // TODO handle error instead of unwrapping
-        let levels = serde_json::from_str::<Vec<Level>>(levels_str).unwrap();
-        // TODO check that there is at least one level
+        let levels = match serde_json::from_str::<Vec<Level>>(levels_str) {
+            Ok(l) => l,
+            Err(e) => return Err(format!("Failed to parse level definitions: {e}").into()),
+        };
+        if levels.is_empty() {
+            return Err("No levels found".into());
+        }
         srand((now() * 1000.) as u64);
         let mut game = GameState {
             gl: GlWrapper(gl),
@@ -54,7 +58,7 @@ impl<'a> GameState<'a> {
             sound_data: SoundData::load().await,
         };
         game.load_level(game.level_idx);
-        game
+        Ok(game)
     }
     fn load_level(&mut self, level_idx: usize) {
         let level = &self.levels[level_idx];

@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use macroquad::prelude::*;
 
 use crate::game::GameState;
@@ -5,8 +7,8 @@ use crate::game::GameState;
 mod game;
 
 #[macroquad::main("Pinwheel")]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     let gl = unsafe { get_internal_gl() };
-    let mut game = GameState::new(gl).await;
+    let mut game = GameState::new(gl).await?;
     game.run().await;
 }
